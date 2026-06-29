@@ -1,8 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import Lenis from 'lenis';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { About } from './components/About.jsx';
 import { Contact } from './components/Contact.jsx';
 import { Education } from './components/Education.jsx';
@@ -12,24 +9,69 @@ import { Projects } from './components/Projects.jsx';
 import { SectionShell } from './components/SectionShell.jsx';
 import { portfolio } from './data/portfolio.js';
 
-gsap.registerPlugin(ScrollTrigger);
-
 function useSmoothScroll() {
   useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.15,
-      easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
-      smoothWheel: true,
-    });
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const coarsePointer = window.matchMedia('(pointer: coarse)');
+    const compactViewport = window.matchMedia('(max-width: 767px)');
 
-    const raf = (time) => lenis.raf(time * 1000);
-    lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
+    let frameId = 0;
+    let lenis;
+    let destroyed = false;
+
+    const shouldUseLenis = () => !prefersReducedMotion.matches && !coarsePointer.matches && !compactViewport.matches;
+
+    const raf = (time) => {
+      lenis?.raf(time);
+      frameId = requestAnimationFrame(raf);
+    };
+
+    const stopLenis = () => {
+      cancelAnimationFrame(frameId);
+      frameId = 0;
+      lenis?.destroy();
+      lenis = undefined;
+    };
+
+    const startLenis = () => {
+      if (lenis || !shouldUseLenis()) {
+        return;
+      }
+
+      import('lenis').then(({ default: Lenis }) => {
+        if (destroyed || lenis || !shouldUseLenis()) {
+          return;
+        }
+
+        lenis = new Lenis({
+          duration: 0.95,
+          easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
+          smoothWheel: true,
+          wheelMultiplier: 0.9,
+        });
+        frameId = requestAnimationFrame(raf);
+      });
+    };
+
+    const syncSmoothScroll = () => {
+      if (shouldUseLenis()) {
+        startLenis();
+      } else {
+        stopLenis();
+      }
+    };
+
+    startLenis();
+    prefersReducedMotion.addEventListener('change', syncSmoothScroll);
+    coarsePointer.addEventListener('change', syncSmoothScroll);
+    compactViewport.addEventListener('change', syncSmoothScroll);
 
     return () => {
-      gsap.ticker.remove(raf);
-      lenis.destroy();
+      destroyed = true;
+      prefersReducedMotion.removeEventListener('change', syncSmoothScroll);
+      coarsePointer.removeEventListener('change', syncSmoothScroll);
+      compactViewport.removeEventListener('change', syncSmoothScroll);
+      stopLenis();
     };
   }, []);
 }
@@ -49,6 +91,9 @@ function useTheme() {
 export default function App() {
   useSmoothScroll();
   const [theme, setTheme] = useTheme();
+  const handleToggleTheme = useCallback(() => {
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   return (
     <AnimatePresence>
@@ -65,7 +110,7 @@ export default function App() {
           <Hero
             profile={portfolio.profile}
             theme={theme}
-            onToggleTheme={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+            onToggleTheme={handleToggleTheme}
           />
           <SectionShell id="about" eyebrow="About" title="Focused, curious, and building with care.">
             <About profile={portfolio.profile} />

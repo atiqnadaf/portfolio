@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
+import { memo } from 'react';
 
-export function About({ profile }) {
+export const About = memo(function About({ profile }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[0.78fr_1fr]">
       <motion.figure
@@ -8,7 +9,13 @@ export function About({ profile }) {
         whileHover={{ y: -6 }}
         transition={{ type: 'spring', stiffness: 260, damping: 24 }}
       >
-        <img src={profile.image} alt="Atiq Nadaf" className="aspect-[4/5] w-full rounded-[1.35rem] object-cover" />
+        <img
+          src={profile.image}
+          alt="Atiq Nadaf"
+          loading="lazy"
+          decoding="async"
+          className="aspect-[4/5] w-full rounded-[1.35rem] object-cover"
+        />
       </motion.figure>
 
       <div className="glass-panel flex flex-col justify-between p-6 sm:p-8 lg:p-10">
@@ -30,11 +37,11 @@ export function About({ profile }) {
               rel="noreferrer"
               aria-label={social.label}
             >
-              <img src={social.icon} alt="" className="themed-icon size-5 object-contain" />
+              <img src={social.icon} alt="" loading="lazy" decoding="async" className="themed-icon size-5 object-contain" />
             </a>
           ))}
         </div>
       </div>
     </div>
   );
-}
+});

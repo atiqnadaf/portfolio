@@ -1,6 +1,50 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const handleChange = () => setMatches(media.matches);
+
+    handleChange();
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, [query]);
+
+  return matches;
+}
+
+function useInViewport(rootMargin = '160px') {
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    if (!ref.current) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { rootMargin },
+    );
+
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [rootMargin]);
+
+  return [ref, isVisible];
+}
+
+const orbGeometry = new THREE.SphereGeometry(1.24, 72, 72);
+const glowGeometry = new THREE.SphereGeometry(1.42, 48, 48);
+const innerRingGeometry = new THREE.TorusGeometry(1.45, 0.01, 10, 128);
+const outerRingGeometry = new THREE.TorusGeometry(1.68, 0.008, 10, 128);
+const highlightGeometry = new THREE.SphereGeometry(1, 24, 24);
 
 function PremiumOrb({ theme }) {
   const isLight = theme === 'light';
@@ -50,37 +94,47 @@ function PremiumOrb({ theme }) {
   return (
     <group ref={mesh}>
       <mesh scale={1.18} material={glowMaterial}>
-        <sphereGeometry args={[1.42, 64, 64]} />
+        <primitive object={glowGeometry} attach="geometry" />
       </mesh>
       <mesh material={material}>
-        <sphereGeometry args={[1.24, 96, 96]} />
+        <primitive object={orbGeometry} attach="geometry" />
       </mesh>
       <mesh rotation={[0.25, -0.42, 0.18]}>
-        <torusGeometry args={[1.45, 0.01, 12, 160]} />
+        <primitive object={innerRingGeometry} attach="geometry" />
         <meshBasicMaterial color={isLight ? '#3f6f79' : '#ffffff'} transparent opacity={isLight ? 0.44 : 0.58} />
       </mesh>
       <mesh ref={outer} rotation={[-0.58, 0.38, -0.16]}>
-        <torusGeometry args={[1.68, 0.008, 12, 180]} />
+        <primitive object={outerRingGeometry} attach="geometry" />
         <meshBasicMaterial color={isLight ? '#0f766e' : '#bae6fd'} transparent opacity={isLight ? 0.32 : 0.28} />
       </mesh>
       <mesh position={[-0.52, 0.42, 0.95]} scale={0.12}>
-        <sphereGeometry args={[1, 32, 32]} />
+        <primitive object={highlightGeometry} attach="geometry" />
         <meshBasicMaterial color={isLight ? '#164e63' : '#ffffff'} transparent opacity={isLight ? 0.52 : 0.74} />
       </mesh>
     </group>
   );
 }
 
-export function FloatingOrb({ theme }) {
+export const FloatingOrb = memo(function FloatingOrb({ theme }) {
   const isLight = theme === 'light';
+  const [containerRef, isVisible] = useInViewport();
+  const shouldReduceCanvasCost = useMediaQuery('(pointer: coarse), (max-width: 767px)');
+  const dpr = shouldReduceCanvasCost ? [1, 1.2] : [1, 1.5];
 
   return (
-    <Canvas camera={{ position: [0, 0, 5], fov: 42 }} dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }}>
-      <ambientLight intensity={isLight ? 1.05 : 1.35} />
-      <directionalLight position={[4, 4, 5]} intensity={isLight ? 2.45 : 2.15} />
-      <pointLight position={[-3, -2, 3]} color={isLight ? '#0f766e' : '#bae6fd'} intensity={isLight ? 0.85 : 1.25} />
-      <pointLight position={[3, -2, 2]} color={isLight ? '#475569' : '#f8fafc'} intensity={isLight ? 0.9 : 0.85} />
-      <PremiumOrb theme={theme} />
-    </Canvas>
+    <div ref={containerRef} className="h-full w-full">
+      <Canvas
+        camera={{ position: [0, 0, 5], fov: 42 }}
+        dpr={dpr}
+        frameloop={isVisible ? 'always' : 'never'}
+        gl={{ antialias: !shouldReduceCanvasCost, alpha: true, powerPreference: 'low-power' }}
+      >
+        <ambientLight intensity={isLight ? 1.05 : 1.35} />
+        <directionalLight position={[4, 4, 5]} intensity={isLight ? 2.45 : 2.15} />
+        <pointLight position={[-3, -2, 3]} color={isLight ? '#0f766e' : '#bae6fd'} intensity={isLight ? 0.85 : 1.25} />
+        <pointLight position={[3, -2, 2]} color={isLight ? '#475569' : '#f8fafc'} intensity={isLight ? 0.9 : 0.85} />
+        <PremiumOrb theme={theme} />
+      </Canvas>
+    </div>
   );
-}
+});

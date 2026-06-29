@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
-import { lazy, Suspense } from 'react';
+import { lazy, memo, Suspense } from 'react';
 
 const FloatingOrb = lazy(() =>
   import('./visuals/FloatingOrb.jsx').then((module) => ({ default: module.FloatingOrb })),
 );
 
-function ThemeIcon({ theme }) {
+const ThemeIcon = memo(function ThemeIcon({ theme }) {
   if (theme === 'dark') {
     return (
       <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5">
@@ -33,9 +33,9 @@ function ThemeIcon({ theme }) {
       <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   );
-}
+});
 
-export function Hero({ profile, theme, onToggleTheme }) {
+export const Hero = memo(function Hero({ profile, theme, onToggleTheme }) {
   return (
     <section id="home" className="relative isolate min-h-[100svh] overflow-hidden px-4 pt-8 sm:px-6 sm:pt-10 lg:px-8">
       <div className="ambient-grid" aria-hidden="true" />
@@ -85,6 +85,8 @@ export function Hero({ profile, theme, onToggleTheme }) {
               <img
                 src={profile.image}
                 alt="Atiq Nadaf"
+                decoding="async"
+                fetchPriority="high"
                 className="size-14 shrink-0 rounded-2xl object-cover shadow-lg ring-1 ring-line/50"
               />
               <div className="min-w-0">
@@ -100,4 +102,4 @@ export function Hero({ profile, theme, onToggleTheme }) {
       <div className="pointer-events-none mx-auto -mt-8 h-px max-w-6xl bg-line/80" />
     </section>
   );
-}
+});

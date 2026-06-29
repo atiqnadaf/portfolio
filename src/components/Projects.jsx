@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { memo } from 'react';
 
 function ProjectVisual({ type, title }) {
   if (type === 'jewellery') {
@@ -73,7 +74,7 @@ function ProjectVisual({ type, title }) {
   );
 }
 
-export function Projects({ projects }) {
+export const Projects = memo(function Projects({ projects }) {
   return (
     <div className="grid gap-5">
       {projects.map((project, index) => (
@@ -117,4 +118,4 @@ export function Projects({ projects }) {
       ))}
     </div>
   );
-}
+});

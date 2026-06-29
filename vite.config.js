@@ -12,7 +12,8 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ['react', 'react-dom'],
-          motion: ['framer-motion', 'gsap', 'lenis'],
+          motion: ['framer-motion'],
+          scroll: ['lenis'],
           three: ['three', '@react-three/fiber'],
         },
       },

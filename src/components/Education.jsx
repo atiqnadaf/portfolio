@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
+import { memo } from 'react';
 
-export function Education({ education }) {
+export const Education = memo(function Education({ education }) {
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {education.map((item, index) => (
@@ -23,4 +24,4 @@ export function Education({ education }) {
       ))}
     </div>
   );
-}
+});
